@@ -17,7 +17,7 @@ namespace NpuApi.Repositories
 
         public CreationRepository(ApplicationDbContext dbContext)
         {
-            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _dbContext = dbContext;
         }
 
         public async Task<Creation> CreateAsync(Creation creation)
@@ -30,13 +30,13 @@ namespace NpuApi.Repositories
         public async Task<IEnumerable<Creation>> GetAllAsync(string? searchTerm = null)
         {
             var query = _dbContext.Creations.AsQueryable();
-            
+
             if (!string.IsNullOrWhiteSpace(searchTerm))
             {
                 searchTerm = searchTerm.ToLower();
                 query = query.Where(c => c.NicePartName.ToLower().Contains(searchTerm.ToLower()));
             }
-            
+
             return await query.ToListAsync();
         }
 

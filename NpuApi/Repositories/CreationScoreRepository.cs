@@ -17,7 +17,7 @@ namespace NpuApi.Repositories
 
         public CreationScoreRepository(ApplicationDbContext dbContext)
         {
-            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+            _dbContext = dbContext;
         }
 
         public async Task<CreationScore> CreateAsync(CreationScore creationScore)
