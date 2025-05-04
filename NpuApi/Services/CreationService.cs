@@ -24,13 +24,13 @@ namespace NpuApi.Services
         public async Task<(Guid Id, string ImageUrl)> CreateCreationAsync(string title, string description, string nicePartName, Stream imageStream, string fileName)
         {
             // TODO: Dynamically determine the content type
-            var imageKey = await _creationImageRepository.UploadFileAsync(imageStream, "image/jpeg");
+            var imageUrl = await _creationImageRepository.UploadFileAsync(imageStream, "image/jpeg");
 
             var creation = new Creation
             {
                 Title = title,
                 Description = description,
-                ImageUrl = imageKey,
+                ImageUrl = imageUrl,
                 UserId = new Guid("9ecbfde3-df9e-4e60-a220-558609f1fe56"), // Using seed user ID for now
                 CreatedAt = DateTime.UtcNow,
                 NicePartName = nicePartName
