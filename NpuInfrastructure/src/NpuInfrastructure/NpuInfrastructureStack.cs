@@ -35,7 +35,7 @@ namespace NpuInfrastructure
                 BucketName = "npu--creations",
                 RemovalPolicy = RemovalPolicy.RETAIN,
                 BlockPublicAccess = BlockPublicAccess.BLOCK_ALL,
-                Versioned = true, 
+                Versioned = true,
             });
             return creationsBucket;
         }
@@ -54,7 +54,7 @@ namespace NpuInfrastructure
         private Credentials CreateDatabaseInstance(IVpc vpc, ISecurityGroup dbSecurityGroup)
         {
             dbSecurityGroup.AddIngressRule(Peer.AnyIpv4(), Port.Tcp(5432), "Allow PostgreSQL connections");
-            
+
             var credentials = Credentials.FromGeneratedSecret("postgres");
 
             new DatabaseInstance(this, "NpuDatabase", new DatabaseInstanceProps
@@ -67,11 +67,11 @@ namespace NpuInfrastructure
                 Vpc = vpc,
                 SecurityGroups = [dbSecurityGroup],
                 VpcSubnets = new SubnetSelection { SubnetType = SubnetType.PRIVATE_WITH_EGRESS },
-                DeletionProtection = true, 
+                DeletionProtection = true,
                 DatabaseName = "npudb",
-                Credentials = credentials, 
+                Credentials = credentials,
                 BackupRetention = Duration.Days(7),
-                RemovalPolicy = RemovalPolicy.SNAPSHOT 
+                RemovalPolicy = RemovalPolicy.SNAPSHOT
             });
 
             return credentials;
@@ -84,19 +84,19 @@ namespace NpuInfrastructure
             {
                 Runtime = Runtime.DOTNET_9,
                 // TODO: Update hardcoded path when using pipeline
-                Code = Code.FromAsset("src/NpuApi/bin/Debug/net9.0"),
+                Code = Code.FromAsset("../NpuApi/bin/Debug/net9.0"),
                 Handler = "NpuApi::Program::LambdaHandler",
                 Vpc = vpc,
                 SecurityGroups = [dbSecurityGroup],
                 Environment = new Dictionary<string, string>
                 {
                     { "BUCKET_NAME", creationsBucket.BucketName },
-                    { "DB_SECRET_NAME", dbCredentials.SecretName },
+                    { "DB_SECRET_ARN", dbCredentials.Secret?.SecretArn ?? string.Empty },
                 }
             });
 
             creationsBucket.GrantReadWrite(npuLambda);
-            dbCredentials.Secret.GrantRead(npuLambda);
+            dbCredentials.Secret?.GrantRead(npuLambda);
 
             return npuLambda;
         }
