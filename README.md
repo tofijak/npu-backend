@@ -15,7 +15,6 @@
 The API is built using ASP.NET Core 9.0 and provides endpoints for uploading, scoring, and searching creations.
 
 ### Prerequisites
-z
 - [.NET 9.0 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 
 ### Run
