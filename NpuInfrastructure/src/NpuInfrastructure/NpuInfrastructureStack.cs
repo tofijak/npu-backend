@@ -119,8 +119,8 @@ namespace NpuInfrastructure
             creationsResource.AddMethod("GET", integration); // GET for listing creations by searching
 
             var creationByIdResource = creationsResource.AddResource("{id}");
-            var scoreResource = creationByIdResource.AddResource("score");
-            scoreResource.AddMethod("POST", integration); // POST method for scoring a creation
+            var scoresResource = creationByIdResource.AddResource("scores");
+            scoresResource.AddMethod("POST", integration); // POST method for scoring a creation
         }
 
         private static void AddAuthHandlerToAPIGateway(LambdaRestApi api)
