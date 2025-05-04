@@ -10,8 +10,22 @@ builder.Services.AddOpenApi();
 
 builder.Services.AddAWSService<IAmazonS3>();
 
-builder.Services.AddDbContext<ApplicationDbContext>(options =>
-    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
+if (builder.Environment.IsDevelopment())
+{
+    var connectionString = builder.Configuration.GetConnectionString("SqliteConnection");
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseSqlite(connectionString));
+
+    Console.WriteLine("Using SQLite database for local development");
+}
+else
+{
+    var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+        options.UseNpgsql(connectionString));
+
+    Console.WriteLine("Using AWS RDS PostgreSQL database");
+}
 
 builder.Services.AddScoped<ICreationRepository, CreationRepository>();
 builder.Services.AddScoped<ICreationImageRepository, CreationImageRepository>();
@@ -28,12 +42,6 @@ using (var scope = app.Services.CreateScope())
     dbContext.Database.Migrate();
 }
 
-if (app.Environment.IsDevelopment())
-{
-    app.MapOpenApi();
-    
-}
-
 app.UseHttpsRedirection();
 
 app.MapPost("/creations", async (HttpRequest request, ICreationService creationService) =>
@@ -46,19 +54,21 @@ app.MapPost("/creations", async (HttpRequest request, ICreationService creationS
         }
 
         var form = await request.ReadFormAsync();
-        
+
         var title = form["title"].ToString();
         var description = form["description"].ToString();
         var image = form.Files.GetFile("image");
+        var nicePartName = form["nicePartName"].ToString();
 
-        if (string.IsNullOrWhiteSpace(title) || image == null)
+        var isInvalidRequest = string.IsNullOrWhiteSpace(title) || image == null || string.IsNullOrWhiteSpace(nicePartName);
+        if (isInvalidRequest)
         {
-            return Results.BadRequest("Title and image are required");
+            return Results.BadRequest("Title, image and nicePartName are required");
         }
 
-        var (id, imageUrl) = await creationService.CreateCreationAsync(title, description, image.OpenReadStream(), image.FileName);
+        var (id, imageUrl) = await creationService.CreateCreationAsync(title, description, nicePartName, image.OpenReadStream(), image.FileName);
 
-        return Results.Created($"/creations/{id}", new { id, title, description, imageUrl });
+        return Results.Created($"/creations/{id}", new { id, title, description, imageUrl, nicePartName });
     }
     catch (Exception ex)
     {
@@ -66,7 +76,7 @@ app.MapPost("/creations", async (HttpRequest request, ICreationService creationS
     }
 });
 
-app.MapPost("/creations/{id}/score", async (string id, HttpRequest request, ICreationRepository creationRepository) =>
+app.MapPost("/creations/{id}/score", async (Guid id, HttpRequest request, ICreationScoreService creationScoreService) =>
 {
     try
     {
@@ -76,15 +86,16 @@ app.MapPost("/creations/{id}/score", async (string id, HttpRequest request, ICre
         }
 
         var form = await request.ReadFormAsync();
-        
-        var score = form["score"].ToString();
 
-        if (string.IsNullOrWhiteSpace(score))
+        var uniqueness = form["uniqueness"].ToString();
+        var creativity = form["creativity"].ToString();
+
+        if (string.IsNullOrWhiteSpace(uniqueness) || string.IsNullOrWhiteSpace(creativity))
         {
-            return Results.BadRequest("Score is required");
+            return Results.BadRequest("Uniqueness and creativity scores are required");
         }
 
-        
+        await creationScoreService.CreateCreationScoreAsync(id, int.Parse(uniqueness), int.Parse(creativity));
 
         return Results.Ok(new { message = "Score submitted successfully" });
     }
@@ -96,20 +107,34 @@ app.MapPost("/creations/{id}/score", async (string id, HttpRequest request, ICre
 
 app.MapGet("/creations", async (ICreationService creationService, string? search) =>
 {
-    var creations = await creationService.GetCreationsAsync(search);
-    return Results.Ok(creations);
+    try
+    {
+        var creations = await creationService.GetCreationsAsync(search);
+        return Results.Ok(creations);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest($"Error fetching creations: {ex.Message}");
+    }
 });
 
 app.MapGet("/creations/{id}", async (Guid id, ICreationService creationService) =>
 {
-    var creation = await creationService.GetCreationByIdAsync(id);
-    
-    if (creation == null)
+    try
     {
-        return Results.NotFound();
+        var creation = await creationService.GetCreationByIdAsync(id);
+
+        if (creation == null)
+        {
+            return Results.NotFound();
+        }
+
+        return Results.Ok(creation);
     }
-    
-    return Results.Ok(creation);
+    catch (Exception ex)
+    {
+        return Results.BadRequest($"Error fetching creation: {ex.Message}");
+    }
 });
 
 app.Run();

@@ -36,12 +36,12 @@ namespace NpuApi.Services
                     ContentType = contentType,
                 };
 
-                
+
                 var response = await _s3Client.PutObjectAsync(putRequest);
 
                 Console.WriteLine($"File uploaded successfully: {fileKey}");
 
-                return fileKey;
+                return GetPresignedUrl(fileKey);
             }
             catch (AmazonS3Exception ex)
             {
@@ -49,5 +49,23 @@ namespace NpuApi.Services
             }
         }
 
+        private string GetPresignedUrl(string fileKey)
+        {
+            try
+            {
+                var urlRequest = new GetPreSignedUrlRequest
+                {
+                    BucketName = _bucketName,
+                    Key = fileKey,
+                    Expires = DateTime.UtcNow.AddDays(1),
+                    Protocol = Protocol.HTTPS
+                };
+                return _s3Client.GetPreSignedURL(urlRequest);
+            }
+            catch (AmazonS3Exception ex)
+            {
+                throw new Exception($"Error generating presigned URL: {ex.Message}", ex);
+            }
+        }
     }
 }

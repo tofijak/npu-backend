@@ -5,7 +5,7 @@ namespace NpuApi.Services
 {
     public interface ICreationService
     {
-        Task<(Guid Id, string ImageUrl)> CreateCreationAsync(string title, string description, Stream imageStream, string fileName);
+        Task<(Guid Id, string ImageUrl)> CreateCreationAsync(string title, string description, string nicePartName, Stream imageStream, string fileName);
         Task<IEnumerable<Creation>> GetCreationsAsync(string? searchTerm = null);
         Task<Creation?> GetCreationByIdAsync(Guid id);
     }
@@ -21,21 +21,22 @@ namespace NpuApi.Services
             _creationImageRepository = creationImageRepository;
         }
 
-        public async Task<(Guid Id, string ImageUrl)> CreateCreationAsync(string title, string description, Stream imageStream, string fileName)
+        public async Task<(Guid Id, string ImageUrl)> CreateCreationAsync(string title, string description, string nicePartName, Stream imageStream, string fileName)
         {
             // TODO: Dynamically determine the content type
             var imageKey = await _creationImageRepository.UploadFileAsync(imageStream, "image/jpeg");
-            
+
             var creation = new Creation
             {
                 Title = title,
                 Description = description,
                 ImageUrl = imageKey,
                 UserId = new Guid("9ecbfde3-df9e-4e60-a220-558609f1fe56"), // Using seed user ID for now
-                CreatedAt = DateTime.UtcNow
+                CreatedAt = DateTime.UtcNow,
+                NicePartName = nicePartName
             };
 
-            try 
+            try
             {
                 var createdEntity = await _creationRepository.CreateAsync(creation);
                 return (createdEntity.Id, createdEntity.ImageUrl);

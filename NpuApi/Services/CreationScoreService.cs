@@ -5,7 +5,7 @@ namespace NpuApi.Services
 {
     public interface ICreationScoreService
     {
-        Task<CreationScore> CreateCreationScoreAsync(Guid creationId, Guid userId, int creativity, int uniqueness);
+        Task<CreationScore> CreateCreationScoreAsync(Guid creationId, int creativity, int uniqueness);
         Task<IEnumerable<CreationScore>> GetCreationScoresAsync(Guid creationId);
         Task<CreationScore?> GetCreationScoreByIdAsync(Guid id);
     }
@@ -19,12 +19,12 @@ namespace NpuApi.Services
             _creationScoreRepository = creationScoreRepository;
         }
 
-        public async Task<CreationScore> CreateCreationScoreAsync(Guid creationId, Guid userId, int creativity, int uniqueness)
+        public async Task<CreationScore> CreateCreationScoreAsync(Guid creationId, int creativity, int uniqueness)
         {
             var creationScore = new CreationScore
             {
                 CreationId = creationId,
-                UserId = userId,
+                UserId = new Guid("9ecbfde3-df9e-4e60-a220-558609f1fe56"), // TODO: Replace with actual user ID
                 Creativity = creativity,
                 Uniqueness = uniqueness
             };
