@@ -1,7 +1,7 @@
-# NPU API
+# NPU Backend
 
 ## Table of Contents
-- [NPU API](#npu-api)
+- [NPU Backend](#npu-backend)
   - [Table of Contents](#table-of-contents)
   - [API](#api)
     - [Prerequisites](#prerequisites)
